@@ -550,7 +550,7 @@ let librosData = {};
 let activeTab        = 'biblioteca';
 let filtroVal        = '';
 let editingId        = null;
-let collapsedAuthors = new Set();
+let expandedAuthors = new Set();
 let formTags          = [];
 let formEstado        = 'leido';
 let formPersonajes    = [];
@@ -686,8 +686,8 @@ function renderCard(id, l) {
 }
 
 function toggleAuthor(autor) {
-  if (collapsedAuthors.has(autor)) collapsedAuthors.delete(autor);
-  else collapsedAuthors.add(autor);
+  if (expandedAuthors.has(autor)) expandedAuthors.delete(autor);
+  else expandedAuthors.add(autor);
   renderBiblioteca();
 }
 
@@ -718,16 +718,16 @@ function renderBiblioteca() {
 
   grid.innerHTML = autores.map(autor => {
     const books     = groups[autor];
-    const collapsed = collapsedAuthors.has(autor);
+    const expanded  = expandedAuthors.has(autor);
     const safeAutor = autor.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `
       <div class="author-group">
         <div class="author-header" onclick="toggleAuthor('${safeAutor}')">
-          <span class="author-chevron${collapsed ? '' : ' open'}">▶</span>
+          <span class="author-chevron${expanded ? ' open' : ''}">▶</span>
           <span class="author-name">${autor}</span>
           <span class="author-count">${books.length} libro${books.length > 1 ? 's' : ''}</span>
         </div>
-        ${collapsed ? '' : `<div class="author-books libros-grid">${books.map(([id,l]) => renderCard(id,l)).join('')}</div>`}
+        ${expanded ? `<div class="author-books libros-grid">${books.map(([id,l]) => renderCard(id,l)).join('')}</div>` : ''}
       </div>`;
   }).join('');
 }
