@@ -241,6 +241,27 @@
     }
     .tag-chip-rm .rm{cursor:pointer;opacity:.55;transition:opacity .1s;}
     .tag-chip-rm .rm:hover{opacity:1;}
+    .pj-chip{
+      display:inline-flex;align-items:center;gap:.3rem;
+      font-size:.67rem;font-family:'DM Mono',monospace;
+      border-radius:10px;padding:.15rem .5rem;border:1px solid;
+    }
+    .pj-chip.protagonista{background:rgba(192,57,43,.08);border-color:rgba(192,57,43,.25);color:var(--accent);}
+    .pj-chip.otro{background:var(--surface2);border-color:var(--border);color:var(--muted);}
+    .pj-chip .pj-tipo{
+      font-size:.55rem;cursor:pointer;opacity:.75;
+      background:rgba(0,0,0,.07);border-radius:4px;padding:.05rem .3rem;transition:opacity .1s;
+    }
+    .pj-chip .pj-tipo:hover{opacity:1;}
+    .pj-chip .rm{cursor:pointer;opacity:.5;transition:opacity .1s;margin-left:.1rem;}
+    .pj-chip .rm:hover{opacity:1;}
+    .pj-tipo-toggle{
+      font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.03em;text-transform:uppercase;
+      padding:.35rem .65rem;border:1px solid var(--border);background:var(--surface2);color:var(--muted);
+      border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;
+    }
+    .pj-tipo-toggle.protagonista{border-color:rgba(192,57,43,.4);color:var(--accent);background:rgba(192,57,43,.06);}
+    .pj-tipo-toggle.otro{border-color:var(--border);color:var(--muted);}
 
     /* ── INSTALL MODAL ── */
     .install-section{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;}
@@ -355,8 +376,17 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Protagonistas</label>
-        <input type="text" id="fProtagonistas" class="form-input" placeholder="Personajes principales">
+        <label>Personajes</label>
+        <div class="tag-input-wrapper">
+          <div id="formPersonajesChips" class="tag-chips"></div>
+          <div style="display:flex;gap:.4rem;align-items:center">
+            <button type="button" id="tipoPersonajeBtn" class="pj-tipo-toggle protagonista"
+              onclick="toggleTipoPersonaje()">Protagonista</button>
+            <input type="text" id="fPersonajeInput" class="form-input"
+              placeholder="Nombre y pulsa Enter…"
+              onkeydown="handlePersonajeKey(event)">
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label>Trama / Reseña personal</label>
@@ -456,8 +486,10 @@ let activeTab        = 'biblioteca';
 let filtroVal        = '';
 let editingId        = null;
 let collapsedAuthors = new Set();
-let formTags   = [];
-let formEstado = 'leido';
+let formTags          = [];
+let formEstado        = 'leido';
+let formPersonajes    = [];
+let formTipoPersonaje = 'protagonista';
 let detailId   = null;
 let valChart   = null;
 let anualChart = null;
@@ -469,6 +501,16 @@ function normalizeLibros(data) {
   Object.values(data).forEach(l => {
     if (!l.palabrasClave) { l.palabrasClave = []; }
     else if (!Array.isArray(l.palabrasClave)) { l.palabrasClave = Object.values(l.palabrasClave); }
+
+    if (l.protagonistas && !l.personajes) {
+      l.personajes = String(l.protagonistas).split(',')
+        .map(n => ({ nombre: n.trim(), tipo: 'protagonista' })).filter(p => p.nombre);
+      delete l.protagonistas;
+    } else if (!l.personajes) {
+      l.personajes = [];
+    } else if (!Array.isArray(l.personajes)) {
+      l.personajes = Object.values(l.personajes);
+    }
   });
   return data;
 }
@@ -785,20 +827,23 @@ function updateStats() {
 // MODAL AÑADIR / EDITAR
 // ══════════════════════════════════════════════════════
 function openAddModal() {
-  editingId  = null;
-  formTags   = [];
-  formEstado = 'leido';
+  editingId         = null;
+  formTags          = [];
+  formPersonajes    = [];
+  formTipoPersonaje = 'protagonista';
+  formEstado        = 'leido';
   document.getElementById('modalTitle').textContent = 'Añadir libro';
-  document.getElementById('fTitulo').value       = '';
-  document.getElementById('fAutor').value        = '';
-  document.getElementById('fFecha').value        = new Date().toISOString().slice(0,10);
-  document.getElementById('fProtagonistas').value= '';
-  document.getElementById('fTrama').value        = '';
-  document.getElementById('fTagInput').value     = '';
+  document.getElementById('fTitulo').value   = '';
+  document.getElementById('fAutor').value    = '';
+  document.getElementById('fFecha').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('fTrama').value    = '';
+  document.getElementById('fTagInput').value = '';
+  document.getElementById('fPersonajeInput').value = '';
   document.querySelectorAll('input[name="fVal"]').forEach(r => r.checked = false);
   document.getElementById('deleteBtn').style.display = 'none';
   setEstado('leido');
   renderFormTags();
+  renderFormPersonajes();
   document.getElementById('bookModal').classList.add('open');
   setTimeout(() => document.getElementById('fTitulo').focus(), 100);
 }
@@ -806,20 +851,23 @@ function openAddModal() {
 function openEditModal(id) {
   const l = librosData[id];
   if (!l) return;
-  editingId  = id;
-  formTags   = [...(l.palabrasClave||[])];
-  formEstado = l.estado || 'leido';
-  document.getElementById('modalTitle').textContent  = 'Editar libro';
-  document.getElementById('fTitulo').value        = l.titulo        || '';
-  document.getElementById('fAutor').value         = l.autor         || '';
-  document.getElementById('fFecha').value         = l.fechaLectura  || '';
-  document.getElementById('fProtagonistas').value = l.protagonistas || '';
-  document.getElementById('fTrama').value         = l.trama         || '';
-  document.getElementById('fTagInput').value      = '';
+  editingId         = id;
+  formTags          = [...(l.palabrasClave||[])];
+  formPersonajes    = (l.personajes||[]).map(p => ({...p}));
+  formTipoPersonaje = 'protagonista';
+  formEstado        = l.estado || 'leido';
+  document.getElementById('modalTitle').textContent = 'Editar libro';
+  document.getElementById('fTitulo').value   = l.titulo       || '';
+  document.getElementById('fAutor').value    = l.autor        || '';
+  document.getElementById('fFecha').value    = l.fechaLectura || '';
+  document.getElementById('fTrama').value    = l.trama        || '';
+  document.getElementById('fTagInput').value = '';
+  document.getElementById('fPersonajeInput').value = '';
   document.querySelectorAll('input[name="fVal"]').forEach(r => { r.checked = r.value === l.valoracion; });
   document.getElementById('deleteBtn').style.display = '';
   setEstado(formEstado);
   renderFormTags();
+  renderFormPersonajes();
   closeDetailModal();
   document.getElementById('bookModal').classList.add('open');
 }
@@ -850,6 +898,40 @@ function renderFormTags() {
   ).join('');
 }
 
+function toggleTipoPersonaje() {
+  formTipoPersonaje = formTipoPersonaje === 'protagonista' ? 'otro' : 'protagonista';
+  const btn = document.getElementById('tipoPersonajeBtn');
+  btn.textContent   = formTipoPersonaje === 'protagonista' ? 'Protagonista' : 'Otro';
+  btn.className     = `pj-tipo-toggle ${formTipoPersonaje}`;
+}
+
+function handlePersonajeKey(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const nombre = e.target.value.trim().replace(/,$/, '');
+    if (nombre) { formPersonajes.push({ nombre, tipo: formTipoPersonaje }); renderFormPersonajes(); }
+    e.target.value = '';
+  }
+}
+
+function removeFormPersonaje(i) { formPersonajes.splice(i, 1); renderFormPersonajes(); }
+
+function toggleFormPersonajeTipo(i) {
+  formPersonajes[i].tipo = formPersonajes[i].tipo === 'protagonista' ? 'otro' : 'protagonista';
+  renderFormPersonajes();
+}
+
+function renderFormPersonajes() {
+  document.getElementById('formPersonajesChips').innerHTML = formPersonajes.map((p, i) => {
+    const label = p.tipo === 'protagonista' ? 'P' : 'O';
+    return `<span class="pj-chip ${p.tipo}">
+      ${p.nombre}
+      <span class="pj-tipo" onclick="toggleFormPersonajeTipo(${i})" title="Cambiar tipo">${label}</span>
+      <span class="rm" onclick="removeFormPersonaje(${i})">✕</span>
+    </span>`;
+  }).join('');
+}
+
 async function saveBook() {
   const titulo = document.getElementById('fTitulo').value.trim();
   if (!titulo) { document.getElementById('fTitulo').focus(); return; }
@@ -857,16 +939,19 @@ async function saveBook() {
   const pendingTag = document.getElementById('fTagInput').value.trim();
   if (pendingTag && !formTags.includes(pendingTag)) formTags.push(pendingTag);
 
+  const pendingPj = document.getElementById('fPersonajeInput').value.trim();
+  if (pendingPj) formPersonajes.push({ nombre: pendingPj, tipo: formTipoPersonaje });
+
   const libro = {
     titulo,
-    autor:          document.getElementById('fAutor').value.trim(),
-    protagonistas:  document.getElementById('fProtagonistas').value.trim(),
-    trama:          document.getElementById('fTrama').value.trim(),
-    valoracion:     formEstado === 'leido' ? (document.querySelector('input[name="fVal"]:checked')?.value || '') : '',
-    palabrasClave:  [...formTags],
-    fechaLectura:   formEstado === 'leido' ? document.getElementById('fFecha').value : '',
-    estado:         formEstado,
-    fechaCreacion:  editingId ? (librosData[editingId]?.fechaCreacion || Date.now()) : Date.now(),
+    autor:         document.getElementById('fAutor').value.trim(),
+    personajes:    [...formPersonajes],
+    trama:         document.getElementById('fTrama').value.trim(),
+    valoracion:    formEstado === 'leido' ? (document.querySelector('input[name="fVal"]:checked')?.value || '') : '',
+    palabrasClave: [...formTags],
+    fechaLectura:  formEstado === 'leido' ? document.getElementById('fFecha').value : '',
+    estado:        formEstado,
+    fechaCreacion: editingId ? (librosData[editingId]?.fechaCreacion || Date.now()) : Date.now(),
   };
 
   try {
@@ -897,15 +982,18 @@ function openDetail(id) {
   const l = librosData[id];
   if (!l) return;
   detailId = id;
-  const val  = VALORACIONES[l.valoracion];
-  const tags = (l.palabrasClave||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+  const val          = VALORACIONES[l.valoracion];
+  const tags         = (l.palabrasClave||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+  const protagonistas = (l.personajes||[]).filter(p => p.tipo === 'protagonista');
+  const otros         = (l.personajes||[]).filter(p => p.tipo === 'otro');
 
   document.getElementById('detailBody').innerHTML = `
     ${val ? `<div class="detail-strip" style="background:${val.color}"></div>` : ''}
     <div class="detail-titulo">${l.titulo||'Sin título'}</div>
     ${l.autor ? `<div class="detail-autor">${l.autor}</div>` : ''}
     ${l.fechaLectura ? `<div class="detail-section"><div class="d-lbl">Fecha de lectura</div><div class="d-val">${fmtDate(l.fechaLectura)}</div></div>` : ''}
-    ${l.protagonistas ? `<div class="detail-section"><div class="d-lbl">Protagonistas</div><div class="d-val">${l.protagonistas}</div></div>` : ''}
+    ${protagonistas.length ? `<div class="detail-section"><div class="d-lbl">Protagonistas</div><div class="libro-tags" style="margin-top:.3rem">${protagonistas.map(p=>`<span class="pj-chip protagonista">${p.nombre}</span>`).join('')}</div></div>` : ''}
+    ${otros.length ? `<div class="detail-section"><div class="d-lbl">Otros personajes</div><div class="libro-tags" style="margin-top:.3rem">${otros.map(p=>`<span class="pj-chip otro">${p.nombre}</span>`).join('')}</div></div>` : ''}
     ${l.trama ? `<div class="detail-section"><div class="d-lbl">Trama / Reseña</div><div class="d-val" style="white-space:pre-line">${l.trama}</div></div>` : ''}
     ${tags ? `<div class="detail-section"><div class="d-lbl">Palabras clave</div><div class="libro-tags" style="margin-top:.3rem">${tags}</div></div>` : ''}
   `;
