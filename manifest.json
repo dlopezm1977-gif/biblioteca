@@ -1,6 +1,6 @@
 {
-  "name": "Mi Biblioteca",
-  "short_name": "Biblioteca",
+  "name": "Biblioteca de Maria",
+  "short_name": "Bib. Maria",
   "description": "Registro personal de libros leídos y pendientes",
   "start_url": ".",
   "display": "standalone",
