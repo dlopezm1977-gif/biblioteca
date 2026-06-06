@@ -242,6 +242,13 @@
     .tag-chip-rm .rm{cursor:pointer;opacity:.55;transition:opacity .1s;}
     .tag-chip-rm .rm:hover{opacity:1;}
 
+    /* ── INSTALL MODAL ── */
+    .install-section{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;}
+    .install-platform{font-weight:600;font-size:.88rem;margin-bottom:.55rem;display:flex;align-items:center;gap:.4rem;}
+    .install-steps{padding-left:1.2rem;display:flex;flex-direction:column;gap:.4rem;}
+    .install-steps li{font-size:.85rem;line-height:1.5;color:var(--text);}
+    .install-divider{text-align:center;font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace;margin:.1rem 0;}
+
     /* ── DETAIL ── */
     .detail-strip{height:4px;border-radius:2px;margin-bottom:1.1rem;flex-shrink:0;}
     .detail-titulo{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:.04em;line-height:1.1;margin-bottom:.3rem;}
@@ -266,6 +273,7 @@
   <div class="logo"><img src="logo.png" alt="" style="height:2rem;width:2rem;object-fit:contain;vertical-align:middle;margin-right:.45rem;border-radius:8px;">Mi Biblioteca</div>
   <div class="header-right">
     <span id="syncStatus">🔄 Cargando…</span>
+    <button class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ Instalar</button>
     <button class="btn btn-accent" onclick="openAddModal()">＋ Añadir</button>
   </div>
 </header>
@@ -385,6 +393,42 @@
       <div style="flex:1"></div>
       <button class="btn" onclick="closeDetailModal()">Cerrar</button>
       <button class="btn btn-accent" onclick="editFromDetail()">✏️ Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INSTALAR -->
+<div id="installModal" class="modal" onclick="if(event.target===this)closeInstallModal()">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-header">
+      <h2>Instalar app</h2>
+      <button class="modal-close" onclick="closeInstallModal()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:.75rem">
+      <div id="nativeInstallSection" style="display:none;display:flex;flex-direction:column;gap:.5rem">
+        <button class="btn btn-accent" style="width:100%;justify-content:center" onclick="triggerNativeInstall()">⬇ Instalar en este dispositivo</button>
+        <div class="install-divider">— o sigue las instrucciones manuales —</div>
+      </div>
+      <div class="install-section">
+        <div class="install-platform">🤖 Android <span style="font-weight:400;color:var(--muted);font-size:.8rem">(Chrome)</span></div>
+        <ol class="install-steps">
+          <li>Toca el menú <strong>⋮</strong> (tres puntos) arriba a la derecha</li>
+          <li>Selecciona <strong>"Añadir a pantalla de inicio"</strong> o <strong>"Instalar app"</strong></li>
+          <li>Confirma tocando <strong>"Instalar"</strong></li>
+        </ol>
+      </div>
+      <div class="install-section">
+        <div class="install-platform">🍎 iPhone / iPad <span style="font-weight:400;color:var(--muted);font-size:.8rem">(Safari)</span></div>
+        <ol class="install-steps">
+          <li>Toca el botón <strong>Compartir</strong> (cuadrado con flecha ↑) en la barra inferior</li>
+          <li>Desplázate y toca <strong>"Añadir a pantalla de inicio"</strong></li>
+          <li>Toca <strong>"Añadir"</strong> en la esquina superior derecha</li>
+        </ol>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeInstallModal()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -870,6 +914,30 @@ function openDetail(id) {
 
 function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); }
 function editFromDetail()   { if (detailId) openEditModal(detailId); }
+
+// ══════════════════════════════════════════════════════
+// INSTALL
+// ══════════════════════════════════════════════════════
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const section = document.getElementById('nativeInstallSection');
+  if (section) section.style.display = 'flex';
+});
+
+function openInstallModal()  { document.getElementById('installModal').classList.add('open'); }
+function closeInstallModal() { document.getElementById('installModal').classList.remove('open'); }
+
+async function triggerNativeInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('nativeInstallSection').style.display = 'none';
+  closeInstallModal();
+}
 
 // ══════════════════════════════════════════════════════
 // INIT
