@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Mi Biblioteca</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f0f13">
+  <meta name="theme-color" content="#faf9f7">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="logo.png">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -286,11 +286,37 @@
 
     /* ── RESPONSIVE ── */
     @media(max-width:640px){
+      main{padding:.75rem;}
       .charts-grid,.stats-row{grid-template-columns:1fr;}
       .filters-bar{flex-direction:column;align-items:stretch;}
       .libros-grid{grid-template-columns:1fr;}
-      .modal-box{max-height:95vh;}
+      .modal-box{max-height:96vh;border-radius:10px;}
+      .modal-header,.modal-footer{padding:.8rem 1rem;}
+      .modal-body{padding:.8rem 1rem;}
       .tab-btn{padding:.75rem .7rem;font-size:.65rem;}
+      .form-input{font-size:1rem;}  /* evita zoom en iOS al hacer focus */
+      textarea.form-input{font-size:1rem;}
+      .stat-cards{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));}
+      .detail-titulo{font-size:1.55rem;}
+    }
+    /* header compacto en pantallas pequeñas */
+    @media(max-width:560px){
+      header{padding:.55rem .75rem;gap:.4rem;}
+      .logo{font-size:1.35rem;}
+      .header-right{gap:.35rem;}
+      #syncStatus{display:none;}
+      .btn-label{display:none;}
+      .btn-sm{padding:.35rem .55rem;font-size:.65rem;}
+      .btn-accent{padding:.45rem .7rem;}
+      .tabs-nav{top:48px;padding:0 .5rem;}
+      .tab-btn{padding:.7rem .5rem;font-size:.62rem;}
+    }
+    /* formulario de personaje en pantallas muy pequeñas */
+    @media(max-width:420px){
+      .pj-add-form > div{flex-wrap:wrap;}
+      .pj-tipo-toggle{width:100%;}
+      .modal-body{padding:.65rem .75rem;gap:.7rem;}
+      .modal-header,.modal-footer{padding:.65rem .75rem;}
     }
   </style>
 </head>
@@ -300,9 +326,9 @@
   <div class="logo"><img src="logo.png" alt="" style="height:2rem;width:2rem;object-fit:contain;vertical-align:middle;margin-right:.45rem;border-radius:8px;">Mi Biblioteca</div>
   <div class="header-right">
     <span id="syncStatus">🔄 Cargando…</span>
-    <button class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ Instalar</button>
-    <button class="btn btn-sm" onclick="openImportModal()" title="Importar CSV de Trello">📥 Importar</button>
-    <button class="btn btn-accent" onclick="openAddModal()">＋ Añadir</button>
+    <button class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ <span class="btn-label">Instalar</span></button>
+    <button class="btn btn-sm" onclick="openImportModal()" title="Importar CSV de Trello">📥 <span class="btn-label">Importar</span></button>
+    <button class="btn btn-accent" onclick="openAddModal()">＋ <span class="btn-label">Añadir</span></button>
   </div>
 </header>
 
