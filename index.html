@@ -301,6 +301,7 @@
   <div class="header-right">
     <span id="syncStatus">🔄 Cargando…</span>
     <button class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ Instalar</button>
+    <button class="btn btn-sm" onclick="openImportModal()" title="Importar CSV de Trello">📥 Importar</button>
     <button class="btn btn-accent" onclick="openAddModal()">＋ Añadir</button>
   </div>
 </header>
@@ -469,6 +470,34 @@
     <div class="modal-footer">
       <div style="flex:1"></div>
       <button class="btn" onclick="closeInstallModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: IMPORTAR TRELLO -->
+<div id="importModal" class="modal" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header">
+      <h2>Importar desde Trello</h2>
+      <button class="modal-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:.85rem">
+      <p style="font-size:.84rem;color:var(--muted);line-height:1.55;margin:0">
+        Selecciona el fichero CSV exportado desde Trello.<br>
+        <span style="font-size:.75rem">En el tablero: <strong>···</strong> → Más → Exportar como CSV</span>
+      </p>
+      <div style="border:2px dashed var(--border);border-radius:8px;padding:1.25rem;text-align:center;background:var(--surface2)">
+        <input type="file" id="trelloCSVFile" accept=".csv" onchange="handleTrelloFile(event)" style="display:none">
+        <button class="btn" onclick="document.getElementById('trelloCSVFile').click()">📂 Seleccionar CSV</button>
+        <div id="importFileInfo" style="margin-top:.5rem;font-size:.78rem;color:var(--muted)"></div>
+      </div>
+      <div id="importPreview" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-size:.83rem;line-height:1.7"></div>
+      <div id="importProgress" style="display:none;font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.8;min-height:1.5rem"></div>
+    </div>
+    <div class="modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeImportModal()">Cancelar</button>
+      <button id="doImportBtn" class="btn btn-accent" onclick="importTrelloCSV()" style="display:none">⬆ Importar</button>
     </div>
   </div>
 </div>
@@ -1054,6 +1083,173 @@ async function triggerNativeInstall() {
   deferredInstallPrompt = null;
   document.getElementById('nativeInstallSection').style.display = 'none';
   closeInstallModal();
+}
+
+// ══════════════════════════════════════════════════════
+// IMPORTAR TRELLO CSV
+// ══════════════════════════════════════════════════════
+let trelloBooks = [];
+
+function openImportModal() {
+  trelloBooks = [];
+  document.getElementById('importFileInfo').textContent = '';
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importProgress').style.display = 'none';
+  document.getElementById('doImportBtn').style.display = 'none';
+  document.getElementById('trelloCSVFile').value = '';
+  document.getElementById('importModal').classList.add('open');
+}
+function closeImportModal() { document.getElementById('importModal').classList.remove('open'); }
+
+function parseTrelloCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else if (ch === '\n') { row.push(field); field = ''; if (row.some(c => c)) rows.push(row); row = []; }
+      else field += ch;
+    }
+  }
+  if (field || row.length) { row.push(field); if (row.some(c => c)) rows.push(row); }
+  return rows;
+}
+
+function parseTrelloDesc(desc) {
+  const res = { personajes: [], trama: '', palabrasClave: [] };
+  if (!desc) return res;
+
+  const tM = /\*\*Trama\*\*\s*([\s\S]*?)(?=\n\*\*|$)/i.exec(desc);
+  if (tM) res.trama = tM[1].trim();
+
+  const pcM = /\*\*Palabras?\s*[Cc]laves?\*?\*?[*]?\s*([\s\S]*?)(?=\n\*\*|$)/i.exec(desc);
+  if (pcM) {
+    res.palabrasClave = pcM[1]
+      .split(/[,\n]/)
+      .map(s => s.replace(/^[-*•\s_]+/, '').replace(/[_*]$/, '').replace(/\.$/, '').trim())
+      .filter(s => s && s.length > 0 && s.length < 60 && !/^\*{1,2}/.test(s));
+  }
+
+  const prM = /\*\*(?:Protagonistas?|Personajes?)\*\*\s*([\s\S]*?)(?=\n\*\*|$)/i.exec(desc);
+  if (prM) {
+    prM[1].split(/\n/).forEach(line => {
+      if (!line.trim().startsWith('-')) return;
+      const clean = line.replace(/^[-\s]+/, '').trim();
+      if (!clean || /^Otros?\s+personajes?:/i.test(clean)) return;
+      const ci = clean.indexOf(':');
+      if (ci > 0 && ci < 80) {
+        res.personajes.push({ nombre: clean.slice(0, ci).trim(), descripcion: clean.slice(ci + 1).trim(), tipo: 'protagonista' });
+      } else {
+        res.personajes.push({ nombre: clean, descripcion: '', tipo: 'protagonista' });
+      }
+    });
+  } else if (!tM) {
+    res.trama = desc.trim();
+  }
+  return res;
+}
+
+function mapTrelloLabel(label) {
+  const colors = { yellow: 'amarillo', red: 'rojo', orange: 'naranja', purple: 'morado', green: 'verde' };
+  const m = label.match(/\((\w+)\)/);
+  return m ? (colors[m[1]] || '') : '';
+}
+
+function handleTrelloFile(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  document.getElementById('importFileInfo').textContent = `📄 ${file.name}`;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const rows = parseTrelloCSV(e.target.result);
+      if (rows.length < 2) throw new Error('El fichero no parece un CSV de Trello válido.');
+      const hdr = rows[0];
+      const ci = name => hdr.indexOf(name);
+      const iTitle    = ci('Card Name');
+      const iDesc     = ci('Card Description');
+      const iLabel    = ci('Labels');
+      const iDate     = ci('Last Activity Date');
+      const iAutor    = ci('List Name');
+      const iArchived = ci('Archived');
+
+      if (iTitle < 0 || iAutor < 0) throw new Error('No se encontraron las columnas esperadas.');
+
+      const existing = new Set(Object.values(librosData).map(l => (l.titulo || '').toLowerCase().trim()));
+      trelloBooks = [];
+      let skipped = 0;
+
+      rows.slice(1).forEach(r => {
+        if ((r[iArchived] || '').toLowerCase() === 'true') return;
+        const titulo = (r[iTitle] || '').trim();
+        if (!titulo) return;
+        if (existing.has(titulo.toLowerCase())) { skipped++; return; }
+
+        const parsed = parseTrelloDesc(r[iDesc] || '');
+        trelloBooks.push({
+          titulo,
+          autor: (r[iAutor] || '').trim(),
+          estado: 'leido',
+          valoracion: mapTrelloLabel(r[iLabel] || ''),
+          fechaLectura: (r[iDate] || '').slice(0, 10),
+          trama: parsed.trama,
+          personajes: parsed.personajes,
+          palabrasClave: parsed.palabrasClave,
+          fechaCreacion: Date.now(),
+        });
+      });
+
+      const autores = [...new Set(trelloBooks.map(b => b.autor))].filter(Boolean).length;
+      const preview = document.getElementById('importPreview');
+      preview.style.display = '';
+      preview.innerHTML = `
+        <strong>${trelloBooks.length} libros</strong> listos para importar de <strong>${autores} autores</strong>.
+        ${skipped ? `<br><span style="color:var(--muted);font-size:.8rem">${skipped} omitidos (ya existen en la biblioteca).</span>` : ''}
+      `.trim();
+      document.getElementById('doImportBtn').style.display = trelloBooks.length ? '' : 'none';
+    } catch (err) {
+      const preview = document.getElementById('importPreview');
+      preview.style.display = '';
+      preview.textContent = '⚠ ' + err.message;
+      document.getElementById('doImportBtn').style.display = 'none';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function importTrelloCSV() {
+  if (!trelloBooks.length) return;
+  const btn = document.getElementById('doImportBtn');
+  btn.disabled = true;
+  const prog = document.getElementById('importProgress');
+  prog.style.display = '';
+
+  let ok = 0, err = 0;
+  for (const libro of trelloBooks) {
+    prog.textContent = `Importando ${ok + err + 1} / ${trelloBooks.length}…`;
+    try {
+      const res = await fetch(`${DB_URL}/libros.json`, { method: 'POST', body: JSON.stringify(libro) });
+      const data = await res.json();
+      librosData[data.name] = libro;
+      ok++;
+    } catch (_) { err++; }
+  }
+
+  localStorage.setItem('bib_libros', JSON.stringify(librosData));
+  setSyncStatus(`✅ ${ok} libros importados`);
+  prog.innerHTML = `✅ Importados <strong>${ok}</strong> libros${err ? ` (${err} con error)` : ''}.`;
+
+  renderBiblioteca();
+  renderPendientes();
+
+  btn.disabled = false;
+  setTimeout(() => closeImportModal(), 2500);
 }
 
 // ══════════════════════════════════════════════════════
