@@ -871,7 +871,7 @@ function updateStats() {
 
   // Grupos por valoración
   document.getElementById('valGroups').innerHTML = VAL_ORDER.map(v => {
-    const items = leidos.filter(([,l]) => l.valoracion === v)
+    const items = enPeriodo.filter(([,l]) => l.valoracion === v)
       .sort(([,a],[,b]) => (b.fechaLectura||'') > (a.fechaLectura||'') ? 1 : -1);
     if (!items.length) return '';
     const vd = VALORACIONES[v];
