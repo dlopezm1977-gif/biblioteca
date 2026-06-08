@@ -13,6 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -332,6 +334,21 @@
       .modal-body{padding:.65rem .75rem;gap:.7rem;}
       .modal-header,.modal-footer{padding:.65rem .75rem;}
     }
+
+    /* ── LOGIN SCREEN ── */
+    #loginScreen{
+      position:fixed;inset:0;background:var(--bg);z-index:2000;
+      display:flex;align-items:center;justify-content:center;padding:1rem;
+    }
+    .login-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:16px;
+      padding:2rem;width:100%;max-width:360px;
+      box-shadow:0 4px 24px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:1.2rem;
+    }
+    .login-logo{display:flex;flex-direction:column;align-items:center;gap:.6rem;margin-bottom:.4rem;}
+    .login-logo img{width:56px;height:56px;border-radius:14px;object-fit:contain;}
+    .login-logo-title{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.05em;color:var(--text);}
+    .login-error{font-size:.82rem;color:var(--accent);min-height:1.1rem;text-align:center;}
   </style>
 </head>
 <body>
@@ -342,6 +359,7 @@
     <span id="syncStatus">🔄 Cargando…</span>
     <button class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ <span class="btn-label">Instalar</span></button>
     <button class="btn btn-sm" onclick="openImportModal()" title="Importar CSV de Trello">📥 <span class="btn-label">Importar</span></button>
+    <button id="logoutBtn" class="btn btn-sm" onclick="doSignOut()" style="display:none" title="Cerrar sesión">🔒 <span class="btn-label">Salir</span></button>
     <button class="btn btn-accent" onclick="openAddModal()">＋ <span class="btn-label">Añadir</span></button>
   </div>
 </header>
@@ -546,9 +564,93 @@
   </div>
 </div>
 
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="logo.png" alt="">
+      <div class="login-logo-title">Biblioteca de Maria</div>
+    </div>
+    <div class="form-group">
+      <label>Correo electrónico</label>
+      <input type="email" id="loginEmail" class="form-input" placeholder="correo@ejemplo.com"
+        autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="loginPassword" class="form-input" placeholder="Contraseña"
+        autocomplete="current-password" onkeydown="if(event.key==='Enter')doSignIn()">
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <button id="loginBtn" class="btn btn-accent" style="width:100%;justify-content:center;padding:.65rem" onclick="doSignIn()">
+      Entrar
+    </button>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
+// ══════════════════════════════════════════════════════
+// FIREBASE AUTH
+// ══════════════════════════════════════════════════════
+// Obtén tu apiKey en: Firebase Console → Configuración del proyecto → Tu app web
+firebase.initializeApp({
+  apiKey: 'AIzaSyD7dmdyTOqsQFB06typagEc4RSIrf5TZkc',
+  authDomain: 'biblioteca-654fc.firebaseapp.com',
+  databaseURL: 'https://biblioteca-654fc-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'biblioteca-654fc',
+  storageBucket: 'biblioteca-654fc.firebasestorage.app',
+  messagingSenderId: '605328823377',
+  appId: '1:605328823377:web:df304909dd8809fc4e9470',
+});
+const fbAuth = firebase.auth();
+
+async function getAuthToken() {
+  const user = fbAuth.currentUser;
+  if (!user) throw new Error('No autenticado');
+  return user.getIdToken();
+}
+
+async function doSignIn() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Entrando…';
+  try {
+    await fbAuth.signInWithEmailAndPassword(email, password);
+  } catch {
+    errEl.textContent = 'Usuario o contraseña incorrectos';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+async function doSignOut() {
+  await fbAuth.signOut();
+}
+
+let _appReady = false;
+fbAuth.onAuthStateChanged(async user => {
+  const loginScreen = document.getElementById('loginScreen');
+  const logoutBtn   = document.getElementById('logoutBtn');
+  if (user) {
+    loginScreen.style.display = 'none';
+    logoutBtn.style.display   = '';
+    if (!_appReady) {
+      _appReady = true;
+      await init();
+    }
+  } else {
+    loginScreen.style.display = 'flex';
+    logoutBtn.style.display   = 'none';
+    _appReady = false;
+  }
+});
+
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
@@ -606,7 +708,8 @@ function normalizeLibros(data) {
 async function loadLibros() {
   setSyncStatus('🔄 Cargando…');
   try {
-    const res = await fetch(`${DB_URL}/libros.json`);
+    const token = await getAuthToken();
+    const res = await fetch(`${DB_URL}/libros.json?auth=${token}`);
     if (!res.ok) throw new Error(res.status);
     librosData = normalizeLibros((await res.json()) || {});
     localStorage.setItem('bib_libros', JSON.stringify(librosData));
@@ -619,11 +722,12 @@ async function loadLibros() {
 
 async function firebaseSave(id, libro) {
   setSyncStatus('💾 Guardando…');
+  const token = await getAuthToken();
   let finalId = id;
   if (id) {
-    await fetch(`${DB_URL}/libros/${id}.json`, { method:'PUT', body:JSON.stringify(libro) });
+    await fetch(`${DB_URL}/libros/${id}.json?auth=${token}`, { method:'PUT', body:JSON.stringify(libro) });
   } else {
-    const res = await fetch(`${DB_URL}/libros.json`, { method:'POST', body:JSON.stringify(libro) });
+    const res = await fetch(`${DB_URL}/libros.json?auth=${token}`, { method:'POST', body:JSON.stringify(libro) });
     finalId = (await res.json()).name;
   }
   librosData[finalId] = libro;
@@ -634,7 +738,8 @@ async function firebaseSave(id, libro) {
 
 async function firebaseDelete(id) {
   setSyncStatus('🗑 Eliminando…');
-  await fetch(`${DB_URL}/libros/${id}.json`, { method:'DELETE' });
+  const token = await getAuthToken();
+  await fetch(`${DB_URL}/libros/${id}.json?auth=${token}`, { method:'DELETE' });
   delete librosData[id];
   localStorage.setItem('bib_libros', JSON.stringify(librosData));
   setSyncStatus('✅ Eliminado');
@@ -1295,7 +1400,8 @@ async function importTrelloCSV() {
   for (const libro of trelloBooks) {
     prog.textContent = `Importando ${ok + err + 1} / ${trelloBooks.length}…`;
     try {
-      const res = await fetch(`${DB_URL}/libros.json`, { method: 'POST', body: JSON.stringify(libro) });
+      const token = await getAuthToken();
+      const res = await fetch(`${DB_URL}/libros.json?auth=${token}`, { method: 'POST', body: JSON.stringify(libro) });
       const data = await res.json();
       librosData[data.name] = libro;
       ok++;
@@ -1317,12 +1423,10 @@ async function importTrelloCSV() {
 // INIT
 // ══════════════════════════════════════════════════════
 async function init() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   await loadLibros();
   renderBiblioteca();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
-
-init();
 </script>
 </body>
 </html>
