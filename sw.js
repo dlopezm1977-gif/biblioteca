@@ -1,4 +1,4 @@
-const CACHE = 'bib-v20';
+const CACHE = 'bib-v21';
 const ASSETS = [
   './',
   './index.html',
