@@ -1,10 +1,11 @@
-# Mi Biblioteca
+# Biblioteca de Maria
 
 Aplicación web personal para gestionar libros leídos y pendientes de lectura. Funciona como PWA (Progressive Web App), por lo que puede instalarse en móvil o escritorio y usarse sin conexión.
 
 ## Tecnologías
 
 - **Frontend**: HTML + CSS + JavaScript vanilla (sin frameworks)
+- **Autenticación**: Firebase Authentication (email/contraseña)
 - **Base de datos**: Firebase Realtime Database (REST API)
 - **Offline**: Service Worker + localStorage como caché local
 - **Gráficos**: Chart.js 4.4
@@ -20,6 +21,12 @@ biblioteca/
 └── sw.js           # Service Worker para caché offline
 ```
 
+## Autenticación
+
+La app requiere login con email y contraseña (Firebase Authentication). Al cerrar sesión, el formulario se limpia automáticamente.
+
+Para acceder desde un navegador nuevo hay que introducir las credenciales manualmente; no se recuerdan entre sesiones.
+
 ## Funcionalidades
 
 ### Pestañas
@@ -29,7 +36,7 @@ biblioteca/
 
 ### Vista de leídos
 - Libros agrupados por autor en orden alfabético
-- Cada grupo es colapsable/desplegable
+- Grupos colapsados por defecto, desplegables al pulsar
 - Dentro de cada autor los libros se ordenan por fecha de lectura (más reciente primero)
 - Filtro por valoración (emojis de color)
 - Búsqueda por título o autor
@@ -62,12 +69,20 @@ El color de la barra lateral izquierda de cada tarjeta indica la valoración:
 | 🟡 Amarillo | Me gusta poco |
 | 🟢 Verde | No me gusta nada |
 
+Además de la valoración por color, cada libro puede incluir una **valoración libre en texto**.
+
 ### Estadísticas
 - Tarjetas de resumen (total leídos, leídos en el período, pendientes)
 - Gráfico de dona por valoración
 - Gráfico de barras por año
 - Top autores y top palabras clave
-- Agrupación de libros por valoración
+- Agrupación de libros por valoración (respeta el filtro de período activo)
+
+### Importar desde Trello
+Es posible importar una biblioteca desde un CSV exportado de Trello usando el botón **Importar** del header.
+
+### Notificaciones
+La app muestra un toast de confirmación al guardar o eliminar un libro, adaptado a pantallas móviles.
 
 ## Base de datos (Firebase)
 
@@ -98,6 +113,23 @@ Los libros se almacenan bajo el nodo `/libros` con la siguiente estructura:
 }
 ```
 
+### Reglas de seguridad
+
+Las reglas de Firebase restringen el acceso únicamente al UID del usuario autorizado:
+
+```json
+{
+  "rules": {
+    "libros": {
+      ".read": "auth != null && auth.uid === 'UID_DEL_USUARIO'",
+      ".write": "auth != null && auth.uid === 'UID_DEL_USUARIO'"
+    },
+    ".read": false,
+    ".write": false
+  }
+}
+```
+
 ## Modo offline
 
 El Service Worker cachea todos los assets estáticos. Si no hay conexión:
@@ -120,7 +152,7 @@ Abrir en el navegador: `http://localhost:8080`
 Cada vez que se modifica `index.html` hay que incrementar la versión en `sw.js`:
 
 ```javascript
-const CACHE = 'bib-v8'; // incrementar este número
+const CACHE = 'bib-v19'; // incrementar este número
 ```
 
 Y recargar con **Ctrl+Shift+R** en el navegador.

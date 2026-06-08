@@ -648,6 +648,12 @@ fbAuth.onAuthStateChanged(async user => {
     loginScreen.style.display = 'flex';
     logoutBtn.style.display   = 'none';
     _appReady = false;
+    document.getElementById('loginEmail').value    = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').textContent = '';
+    const btn = document.getElementById('loginBtn');
+    btn.disabled    = false;
+    btn.textContent = 'Entrar';
   }
 });
 
