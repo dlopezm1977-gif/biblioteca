@@ -407,6 +407,10 @@
             <label class="val-option"><input type="radio" name="fVal" value="verde">   <span>🟢 No me gusta nada</span></label>
           </div>
         </div>
+        <div class="form-group">
+          <label>Valoración (texto)</label>
+          <input type="text" id="fValoracionTexto" class="form-input" placeholder="Tu valoración en texto libre…">
+        </div>
       </div>
       <div class="form-group">
         <label>Personajes</label>
@@ -904,10 +908,11 @@ function openAddModal() {
   document.getElementById('fTitulo').value   = '';
   document.getElementById('fAutor').value    = '';
   document.getElementById('fFecha').value    = new Date().toISOString().slice(0,10);
-  document.getElementById('fTrama').value    = '';
-  document.getElementById('fTagInput').value = '';
-  document.getElementById('fPersonajeNombre').value = '';
-  document.getElementById('fPersonajeDesc').value   = '';
+  document.getElementById('fTrama').value              = '';
+  document.getElementById('fValoracionTexto').value   = '';
+  document.getElementById('fTagInput').value          = '';
+  document.getElementById('fPersonajeNombre').value   = '';
+  document.getElementById('fPersonajeDesc').value     = '';
   document.querySelectorAll('input[name="fVal"]').forEach(r => r.checked = false);
   document.getElementById('deleteBtn').style.display = 'none';
   setEstado('leido');
@@ -926,10 +931,11 @@ function openEditModal(id) {
   formTipoPersonaje = 'protagonista';
   formEstado        = l.estado || 'leido';
   document.getElementById('modalTitle').textContent = 'Editar libro';
-  document.getElementById('fTitulo').value   = l.titulo       || '';
-  document.getElementById('fAutor').value    = l.autor        || '';
-  document.getElementById('fFecha').value    = l.fechaLectura || '';
-  document.getElementById('fTrama').value    = l.trama        || '';
+  document.getElementById('fTitulo').value            = l.titulo           || '';
+  document.getElementById('fAutor').value             = l.autor            || '';
+  document.getElementById('fFecha').value             = l.fechaLectura     || '';
+  document.getElementById('fTrama').value             = l.trama            || '';
+  document.getElementById('fValoracionTexto').value   = l.valoracionTexto  || '';
   document.getElementById('fTagInput').value        = '';
   document.getElementById('fPersonajeNombre').value = '';
   document.getElementById('fPersonajeDesc').value   = '';
@@ -1028,14 +1034,15 @@ async function saveBook() {
 
   const libro = {
     titulo,
-    autor:         document.getElementById('fAutor').value.trim(),
-    personajes:    [...formPersonajes],
-    trama:         document.getElementById('fTrama').value.trim(),
-    valoracion:    formEstado === 'leido' ? (document.querySelector('input[name="fVal"]:checked')?.value || '') : '',
-    palabrasClave: [...formTags],
-    fechaLectura:  formEstado === 'leido' ? document.getElementById('fFecha').value : '',
-    estado:        formEstado,
-    fechaCreacion: editingId ? (librosData[editingId]?.fechaCreacion || Date.now()) : Date.now(),
+    autor:              document.getElementById('fAutor').value.trim(),
+    personajes:         [...formPersonajes],
+    trama:              document.getElementById('fTrama').value.trim(),
+    valoracion:         formEstado === 'leido' ? (document.querySelector('input[name="fVal"]:checked')?.value || '') : '',
+    valoracionTexto:    formEstado === 'leido' ? document.getElementById('fValoracionTexto').value.trim() : '',
+    palabrasClave:      [...formTags],
+    fechaLectura:       formEstado === 'leido' ? document.getElementById('fFecha').value : '',
+    estado:             formEstado,
+    fechaCreacion:      editingId ? (librosData[editingId]?.fechaCreacion || Date.now()) : Date.now(),
   };
 
   try {
@@ -1078,6 +1085,7 @@ function openDetail(id) {
     ${l.fechaLectura ? `<div class="detail-section"><div class="d-lbl">Fecha de lectura</div><div class="d-val">${fmtDate(l.fechaLectura)}</div></div>` : ''}
     ${protagonistas.length ? `<div class="detail-section"><div class="d-lbl">Protagonistas</div><div class="pj-list" style="margin-top:.35rem">${protagonistas.map(p=>`<div class="pj-item protagonista"><div class="pj-item-body"><div class="pj-item-nombre">${p.nombre}</div>${p.descripcion?`<div class="pj-item-desc">${p.descripcion}</div>`:''}</div></div>`).join('')}</div></div>` : ''}
     ${otros.length ? `<div class="detail-section"><div class="d-lbl">Otros personajes</div><div class="pj-list" style="margin-top:.35rem">${otros.map(p=>`<div class="pj-item otro"><div class="pj-item-body"><div class="pj-item-nombre">${p.nombre}</div>${p.descripcion?`<div class="pj-item-desc">${p.descripcion}</div>`:''}</div></div>`).join('')}</div></div>` : ''}
+    ${l.valoracionTexto ? `<div class="detail-section"><div class="d-lbl">Valoración</div><div class="d-val">${l.valoracionTexto}</div></div>` : ''}
     ${l.trama ? `<div class="detail-section"><div class="d-lbl">Trama / Reseña</div><div class="d-val" style="white-space:pre-line">${l.trama}</div></div>` : ''}
     ${tags ? `<div class="detail-section"><div class="d-lbl">Palabras clave</div><div class="libro-tags" style="margin-top:.3rem">${tags}</div></div>` : ''}
   `;

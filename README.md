@@ -44,7 +44,8 @@ Cada libro almacena los siguientes campos:
 | `estado` | `leido` o `pendiente` |
 | `fechaLectura` | Fecha en formato `YYYY-MM-DD` |
 | `valoracion` | `morado`, `rojo`, `naranja`, `amarillo` o `verde` |
-| `protagonistas` | Personajes principales |
+| `valoracionTexto` | Valoración libre en texto |
+| `personajes` | Array de objetos `{nombre, descripcion, tipo}` (`protagonista` u `otro`) |
 | `trama` | Reseña personal |
 | `palabrasClave` | Array de etiquetas |
 | `fechaCreacion` | Timestamp de creación (Unix ms) |
@@ -86,7 +87,10 @@ Los libros se almacenan bajo el nodo `/libros` con la siguiente estructura:
     "estado": "leido",
     "fechaLectura": "2024-03-15",
     "valoracion": "morado",
-    "protagonistas": "Kvothe",
+    "valoracionTexto": "Una obra maestra de la fantasía épica.",
+    "personajes": [
+      { "nombre": "Kvothe", "descripcion": "Protagonista y narrador", "tipo": "protagonista" }
+    ],
     "trama": "Historia de un mago legendario...",
     "palabrasClave": ["fantasía", "magia"],
     "fechaCreacion": 1710500000000
