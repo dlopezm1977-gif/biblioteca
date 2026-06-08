@@ -276,6 +276,18 @@
     .install-steps li{font-size:.85rem;line-height:1.5;color:var(--text);}
     .install-divider{text-align:center;font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace;margin:.1rem 0;}
 
+    /* ── TOAST ── */
+    .toast{
+      position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(2rem);
+      background:var(--text);color:#fff;
+      font-family:'DM Mono',monospace;font-size:.75rem;letter-spacing:.04em;
+      padding:.6rem 1.1rem;border-radius:8px;
+      opacity:0;pointer-events:none;
+      transition:opacity .2s,transform .2s;
+      z-index:500;white-space:nowrap;
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
     /* ── DETAIL ── */
     .detail-strip{height:4px;border-radius:2px;margin-bottom:1.1rem;flex-shrink:0;}
     .detail-titulo{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:.04em;line-height:1.1;margin-bottom:.3rem;}
@@ -532,6 +544,8 @@
   </div>
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script>
 // ══════════════════════════════════════════════════════
 // CONFIG
@@ -625,6 +639,15 @@ async function firebaseDelete(id) {
 }
 
 function setSyncStatus(msg) { document.getElementById('syncStatus').textContent = msg; }
+
+let _toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
 
 // ══════════════════════════════════════════════════════
 // HELPERS
@@ -1046,11 +1069,13 @@ async function saveBook() {
   };
 
   try {
+    const isNew = !editingId;
     await firebaseSave(editingId, libro);
     closeBookModal();
     renderBiblioteca();
     renderPendientes();
     if (activeTab === 'estadisticas') renderEstadisticas();
+    showToast(isNew ? '✓ Libro añadido correctamente' : '✓ Cambios guardados correctamente');
   } catch { alert('Error al guardar. Comprueba la conexión.'); }
 }
 
