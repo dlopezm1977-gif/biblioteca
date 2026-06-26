@@ -349,6 +349,33 @@
       .modal-header,.modal-footer{padding:.65rem .75rem;}
     }
 
+    /* ── RECIENTES DROPDOWN ── */
+    .recientes-wrapper{position:relative;}
+    .recientes-panel{
+      position:absolute;top:calc(100% + .5rem);right:0;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:10px;width:290px;
+      box-shadow:0 8px 28px rgba(0,0,0,.13);
+      z-index:300;display:none;overflow:hidden;
+    }
+    .recientes-panel.open{display:block;}
+    .recientes-panel-hdr{
+      padding:.55rem .9rem;border-bottom:1px solid var(--border);
+      font-size:.63rem;font-family:'DM Mono',monospace;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.06em;
+    }
+    .reciente-item{
+      display:flex;flex-direction:column;gap:.1rem;
+      padding:.5rem .9rem;border-bottom:1px solid var(--border);
+      cursor:pointer;transition:background .1s;
+    }
+    .reciente-item:last-child{border-bottom:none;}
+    .reciente-item:hover{background:var(--surface2);}
+    .reciente-titulo{font-size:.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .reciente-meta{display:flex;align-items:center;gap:.4rem;}
+    .reciente-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+    .reciente-autor{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
     /* ── LOGIN SCREEN ── */
     #loginScreen{
       position:fixed;inset:0;background:var(--bg);z-index:2000;
@@ -371,6 +398,10 @@
   <div class="logo"><img src="logo.png" alt="" style="height:2rem;width:2rem;object-fit:contain;vertical-align:middle;margin-right:.45rem;border-radius:8px;">Biblioteca de Maria</div>
   <div class="header-right">
     <span id="syncStatus">🔄 Cargando…</span>
+    <div class="recientes-wrapper" id="recientesWrapper">
+      <button class="btn btn-sm" onclick="toggleRecientes()" title="Últimos modificados">🕐 <span class="btn-label">Recientes</span></button>
+      <div class="recientes-panel" id="recientesPanel"></div>
+    </div>
     <button class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ <span class="btn-label">Instalar</span></button>
     <button class="btn btn-sm" onclick="openImportModal()" title="Importar CSV de Trello">📥 <span class="btn-label">Importar</span></button>
     <button id="logoutBtn" class="btn btn-sm" onclick="doSignOut()" style="display:none" title="Cerrar sesión">🔒 <span class="btn-label">Salir</span></button>
@@ -766,6 +797,49 @@ async function firebaseDelete(id) {
 }
 
 function setSyncStatus(msg) { document.getElementById('syncStatus').textContent = msg; }
+
+function toggleRecientes() {
+  const panel = document.getElementById('recientesPanel');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+  } else {
+    renderRecientesPanel();
+    panel.classList.add('open');
+  }
+}
+
+function renderRecientesPanel() {
+  const recientes = Object.entries(librosData)
+    .sort(([,a],[,b]) => (b.updatedAt || b.fechaCreacion || 0) - (a.updatedAt || a.fechaCreacion || 0))
+    .slice(0, 10);
+
+  const panel = document.getElementById('recientesPanel');
+  if (!recientes.length) {
+    panel.innerHTML = `<div class="recientes-panel-hdr">Últimos modificados</div>
+      <div style="padding:.9rem;font-size:.82rem;color:var(--muted)">No hay libros aún</div>`;
+    return;
+  }
+  const items = recientes.map(([id, l]) => {
+    const color = VALORACIONES[l.valoracion]?.color || 'var(--border)';
+    return `<div class="reciente-item" onclick="closeRecientes();openDetail('${id}')">
+      <div class="reciente-titulo">${l.titulo || 'Sin título'}</div>
+      <div class="reciente-meta">
+        <div class="reciente-dot" style="background:${color}"></div>
+        <span class="reciente-autor">${l.autor || '—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+  panel.innerHTML = `<div class="recientes-panel-hdr">Últimos modificados</div>${items}`;
+}
+
+function closeRecientes() {
+  document.getElementById('recientesPanel').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  const wrapper = document.getElementById('recientesWrapper');
+  if (wrapper && !wrapper.contains(e.target)) closeRecientes();
+});
 
 let _toastTimer = null;
 function showToast(msg) {
@@ -1223,6 +1297,7 @@ async function saveBook() {
     fechaLectura:       formEstado === 'leido' ? document.getElementById('fFecha').value : '',
     estado:             formEstado,
     fechaCreacion:      editingId ? (librosData[editingId]?.fechaCreacion || Date.now()) : Date.now(),
+    updatedAt:          Date.now(),
   };
 
   try {

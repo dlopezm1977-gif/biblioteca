@@ -56,6 +56,7 @@ Cada libro almacena los siguientes campos:
 | `trama` | Reseña personal |
 | `palabrasClave` | Array de etiquetas |
 | `fechaCreacion` | Timestamp de creación (Unix ms) |
+| `updatedAt` | Timestamp de última modificación (Unix ms) |
 
 ### Sistema de valoración
 
@@ -77,6 +78,9 @@ Además de la valoración por color, cada libro puede incluir una **valoración 
 - Gráfico de barras por año
 - Top autores y top palabras clave
 - Agrupación de libros por valoración (respeta el filtro de período activo)
+
+### Recientes
+El botón **🕐 Recientes** del header despliega un panel con los 10 últimos libros modificados, ordenados por fecha de modificación (campo `updatedAt`). Los libros sin ese campo (importados antes de esta versión) usan `fechaCreacion` como fallback. Al pulsar un libro del panel se abre su detalle directamente.
 
 ### Importar desde Trello
 Es posible importar una biblioteca desde un CSV exportado de Trello usando el botón **Importar** del header.
@@ -152,7 +156,7 @@ Abrir en el navegador: `http://localhost:8080`
 Cada vez que se modifica `index.html` hay que incrementar la versión en `sw.js`:
 
 ```javascript
-const CACHE = 'bib-v19'; // incrementar este número
+const CACHE = 'bib-v22'; // incrementar este número
 ```
 
 Y recargar con **Ctrl+Shift+R** en el navegador.
