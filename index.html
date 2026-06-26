@@ -336,6 +336,7 @@
       .header-right{gap:.35rem;}
       #syncStatus{display:none;}
       .btn-label{display:none;}
+      #installBtn{display:none;}
       .btn-sm{padding:.35rem .55rem;font-size:.65rem;}
       .btn-accent{padding:.45rem .7rem;}
       .tabs-nav{top:48px;padding:0 .5rem;}
@@ -402,7 +403,7 @@
       <button class="btn btn-sm" onclick="toggleRecientes()" title="Últimos modificados">🕐 <span class="btn-label">Recientes</span></button>
       <div class="recientes-panel" id="recientesPanel"></div>
     </div>
-    <button class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ <span class="btn-label">Instalar</span></button>
+    <button id="installBtn" class="btn btn-sm" onclick="openInstallModal()" title="Instalar app">⬇ <span class="btn-label">Instalar</span></button>
     <button class="btn btn-sm" onclick="openImportModal()" title="Importar CSV de Trello">📥 <span class="btn-label">Importar</span></button>
     <button id="logoutBtn" class="btn btn-sm" onclick="doSignOut()" style="display:none" title="Cerrar sesión">🔒 <span class="btn-label">Salir</span></button>
     <button class="btn btn-accent" onclick="openAddModal()">＋ <span class="btn-label">Añadir</span></button>
