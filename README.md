@@ -41,6 +41,9 @@ Para acceder desde un navegador nuevo hay que introducir las credenciales manual
 - Filtro por valoración (emojis de color)
 - Búsqueda por título o autor
 
+### Detalle de libro
+Al pulsar una tarjeta se abre el modal de detalle con todos los campos del libro. Al final aparece el campo **Última modificación** (no editable) con la fecha de `updatedAt` o `fechaCreacion` si el primero no existe.
+
 ### Ficha de libro
 Cada libro almacena los siguientes campos:
 
@@ -80,7 +83,7 @@ Además de la valoración por color, cada libro puede incluir una **valoración 
 - Agrupación de libros por valoración (respeta el filtro de período activo)
 
 ### Recientes
-El botón **🕐 Recientes** del header despliega un panel con los 10 últimos libros modificados, ordenados por fecha de modificación (campo `updatedAt`). Los libros sin ese campo (importados antes de esta versión) usan `fechaCreacion` como fallback. Al pulsar un libro del panel se abre su detalle directamente.
+El botón **🕐 Recientes** del header despliega un panel con los 10 últimos libros modificados, ordenados por `updatedAt`. Cada fila muestra título, autor, punto de color de valoración y fecha de modificación. Al pulsar un libro se abre su detalle. En móvil el panel ocupa todo el ancho de la pantalla. El botón **Instalar** se oculta en móvil para no saturar el header.
 
 ### Importar desde Trello
 Es posible importar una biblioteca desde un CSV exportado de Trello usando el botón **Importar** del header.
@@ -112,7 +115,8 @@ Los libros se almacenan bajo el nodo `/libros` con la siguiente estructura:
     ],
     "trama": "Historia de un mago legendario...",
     "palabrasClave": ["fantasía", "magia"],
-    "fechaCreacion": 1710500000000
+    "fechaCreacion": 1710500000000,
+    "updatedAt": 1750896000000
   }
 }
 ```
@@ -156,7 +160,7 @@ Abrir en el navegador: `http://localhost:8080`
 Cada vez que se modifica `index.html` hay que incrementar la versión en `sw.js`:
 
 ```javascript
-const CACHE = 'bib-v22'; // incrementar este número
+const CACHE = 'bib-v23'; // incrementar este número
 ```
 
 Y recargar con **Ctrl+Shift+R** en el navegador.

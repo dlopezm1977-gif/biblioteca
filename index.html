@@ -832,6 +832,7 @@ function renderRecientesPanel() {
       <div class="reciente-meta">
         <div class="reciente-dot" style="background:${color}"></div>
         <span class="reciente-autor">${l.autor || '—'}</span>
+        <span style="margin-left:auto;font-size:.68rem;font-family:'DM Mono',monospace;color:var(--muted);flex-shrink:0">${fmtTimestamp(l.updatedAt || l.fechaCreacion)}</span>
       </div>
     </div>`;
   }).join('');
@@ -863,6 +864,12 @@ function fmtDate(d) {
   if (!d) return '';
   const [y,m,day] = d.split('-');
   return `${day}/${m}/${y}`;
+}
+
+function fmtTimestamp(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 }
 
 function getLeidos()     { return Object.entries(librosData).filter(([,l]) => l.estado === 'leido'); }
@@ -1351,6 +1358,7 @@ function openDetail(id) {
     ${l.valoracionTexto ? `<div class="detail-section"><div class="d-lbl">Valoración</div><div class="d-val">${l.valoracionTexto}</div></div>` : ''}
     ${l.trama ? `<div class="detail-section"><div class="d-lbl">Trama / Reseña</div><div class="d-val" style="white-space:pre-line">${l.trama}</div></div>` : ''}
     ${tags ? `<div class="detail-section"><div class="d-lbl">Palabras clave</div><div class="libro-tags" style="margin-top:.3rem">${tags}</div></div>` : ''}
+    ${(l.updatedAt || l.fechaCreacion) ? `<div class="detail-section" style="border-top:1px solid var(--border);padding-top:.75rem;margin-top:.25rem"><div class="d-lbl">Última modificación</div><div class="d-val" style="font-family:'DM Mono',monospace;font-size:.8rem;color:var(--muted)">${fmtTimestamp(l.updatedAt || l.fechaCreacion)}</div></div>` : ''}
   `;
   document.getElementById('detailModal').classList.add('open');
 }
