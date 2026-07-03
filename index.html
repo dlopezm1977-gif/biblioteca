@@ -241,6 +241,19 @@
     .val-option span{font-size:.88rem;}
     .tag-input-wrapper{display:flex;flex-direction:column;gap:.4rem;}
     .tag-chips{display:flex;flex-wrap:wrap;gap:.35rem;min-height:.5rem;}
+    .autor-autocomplete{position:relative;}
+    .autor-dropdown{
+      position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:200;
+      background:var(--surface);border:1px solid var(--border);border-radius:6px;
+      box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:200px;overflow-y:auto;
+    }
+    .autor-option{
+      padding:.75rem .75rem;cursor:pointer;font-size:.88rem;color:var(--text);
+      transition:background .1s;border-bottom:1px solid var(--border);
+    }
+    .autor-option:last-child{border-bottom:none;}
+    .autor-option:hover,.autor-option.focused{background:rgba(192,57,43,.07);color:var(--accent);}
+    .autor-option strong{color:var(--accent);font-weight:600;}
     .tag-chip-rm{
       display:inline-flex;align-items:center;gap:.3rem;
       font-size:.67rem;font-family:'DM Mono',monospace;
@@ -326,6 +339,8 @@
       .tab-btn{padding:.75rem .7rem;font-size:.65rem;}
       .form-input{font-size:1rem;}  /* evita zoom en iOS al hacer focus */
       textarea.form-input{font-size:1rem;}
+      .autor-option{padding:.9rem .75rem;font-size:1rem;}
+      .autor-dropdown{max-height:160px;}
       .stat-cards{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));}
       .detail-titulo{font-size:1.55rem;}
     }
@@ -466,7 +481,11 @@
       </div>
       <div class="form-group">
         <label>Autor</label>
-        <input type="text" id="fAutor" class="form-input" placeholder="Nombre del autor">
+        <div class="autor-autocomplete">
+          <input type="text" id="fAutor" class="form-input" placeholder="Nombre del autor" autocomplete="off"
+            oninput="onAutorInput()" onkeydown="onAutorKeydown(event)" onblur="closeAutorDropdown(150)">
+          <div id="autorDropdown" class="autor-dropdown" style="display:none"></div>
+        </div>
       </div>
       <div class="form-group">
         <label>Estado</label>
@@ -1157,6 +1176,83 @@ function updateStats() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// AUTOR AUTOCOMPLETE
+// ══════════════════════════════════════════════════════
+let _autorFocusIdx = -1;
+let _autorCloseTimer = null;
+
+function getAutoresUnicos() {
+  return [...new Set(
+    Object.values(librosData)
+      .map(l => (l.autor || '').trim())
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+}
+
+function onAutorInput() {
+  const q = document.getElementById('fAutor').value.trim();
+  if (_autorCloseTimer) { clearTimeout(_autorCloseTimer); _autorCloseTimer = null; }
+  if (!q) { closeAutorDropdown(0); return; }
+  const matches = getAutoresUnicos().filter(a =>
+    a.toLowerCase().includes(q.toLowerCase())
+  );
+  renderAutorDropdown(matches, q);
+}
+
+function renderAutorDropdown(matches, q) {
+  const dd = document.getElementById('autorDropdown');
+  _autorFocusIdx = -1;
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map((a, i) => {
+    const lo = a.toLowerCase(), lq = q.toLowerCase();
+    const idx = lo.indexOf(lq);
+    const highlighted = idx >= 0
+      ? a.slice(0, idx) + '<strong>' + a.slice(idx, idx + q.length) + '</strong>' + a.slice(idx + q.length)
+      : a;
+    return `<div class="autor-option" data-idx="${i}" onmousedown="selectAutor('${a.replace(/'/g,"&#39;")}')">${highlighted}</div>`;
+  }).join('');
+  dd.style.display = 'block';
+}
+
+function onAutorKeydown(e) {
+  const dd = document.getElementById('autorDropdown');
+  if (dd.style.display === 'none') return;
+  const items = dd.querySelectorAll('.autor-option');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _autorFocusIdx = (_autorFocusIdx + 1) % items.length;
+    items.forEach((el, i) => el.classList.toggle('focused', i === _autorFocusIdx));
+    items[_autorFocusIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _autorFocusIdx = (_autorFocusIdx - 1 + items.length) % items.length;
+    items.forEach((el, i) => el.classList.toggle('focused', i === _autorFocusIdx));
+    items[_autorFocusIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter' && _autorFocusIdx >= 0) {
+    e.preventDefault();
+    selectAutor(items[_autorFocusIdx].textContent);
+  } else if (e.key === 'Escape') {
+    closeAutorDropdown(0);
+  }
+}
+
+function selectAutor(name) {
+  document.getElementById('fAutor').value = name;
+  closeAutorDropdown(0);
+}
+
+function closeAutorDropdown(delay) {
+  if (delay) {
+    _autorCloseTimer = setTimeout(() => {
+      document.getElementById('autorDropdown').style.display = 'none';
+    }, delay);
+  } else {
+    document.getElementById('autorDropdown').style.display = 'none';
+  }
 }
 
 // ══════════════════════════════════════════════════════

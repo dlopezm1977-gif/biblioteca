@@ -44,6 +44,18 @@ Para acceder desde un navegador nuevo hay que introducir las credenciales manual
 ### Detalle de libro
 Al pulsar una tarjeta se abre el modal de detalle con todos los campos del libro. Al final aparece el campo **Última modificación** (no editable) con la fecha de `updatedAt` o `fechaCreacion` si el primero no existe.
 
+### Autocompletado de autor
+
+Al escribir en el campo **Autor** del formulario de añadir/editar libro aparece un dropdown con sugerencias filtradas de los autores ya registrados en la base de datos:
+
+- Búsqueda por substring (no solo por inicio del nombre)
+- El texto coincidente se resalta en rojo dentro de cada opción
+- Los autores aparecen deduplicados y ordenados alfabéticamente — si un autor tiene varios libros, aparece una sola vez en la lista
+- Se puede seleccionar con tap/clic o con teclado (↑↓ para navegar, Enter para confirmar, Escape para cerrar)
+- Optimizado para móvil y tableta: áreas de tap amplias y dropdown de altura reducida para no solaparse con el teclado virtual
+
+El campo sigue admitiendo texto libre, de modo que se puede introducir un autor nuevo que aún no esté en la biblioteca.
+
 ### Ficha de libro
 Cada libro almacena los siguientes campos:
 
