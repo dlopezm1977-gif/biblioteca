@@ -278,7 +278,7 @@
       padding:0;font-family:inherit;color:var(--text);outline:none;transition:border-color .15s;
     }
     .pj-edit-nombre{font-size:.83rem;font-weight:600;}
-    .pj-edit-desc{font-size:.76rem;color:var(--muted);margin-top:.2rem;}
+    .pj-edit-desc{font-size:.76rem;color:var(--muted);margin-top:.2rem;resize:none;overflow:hidden;min-height:1.4rem;max-height:80px;overflow-y:auto;}
     .pj-edit-nombre:focus,.pj-edit-desc:focus{border-bottom-color:var(--accent2);}
     .pj-edit-desc::placeholder{color:var(--border);}
     .pj-badge{
@@ -519,10 +519,11 @@
               onclick="toggleTipoPersonaje()">Protagonista</button>
             <input type="text" id="fPersonajeNombre" class="form-input" placeholder="Nombre del personaje">
           </div>
-          <div style="display:flex;gap:.35rem">
-            <input type="text" id="fPersonajeDesc" class="form-input"
+          <div style="display:flex;gap:.35rem;align-items:flex-start">
+            <textarea id="fPersonajeDesc" class="form-input" rows="2"
+              style="min-height:unset;resize:none"
               placeholder="Descripción breve…"
-              onkeydown="handlePersonajeDescKey(event)">
+              onkeydown="handlePersonajeDescKey(event)"></textarea>
             <button type="button" class="btn" style="flex-shrink:0" onclick="addPersonaje()">＋ Añadir</button>
           </div>
         </div>
@@ -533,7 +534,7 @@
       </div>
       <div class="form-group">
         <label>Valoración (texto)</label>
-        <input type="text" id="fValoracionTexto" class="form-input" placeholder="Tu valoración en texto libre…">
+        <textarea id="fValoracionTexto" class="form-input" rows="3" placeholder="Tu valoración en texto libre…"></textarea>
       </div>
       <div class="form-group">
         <label>Palabras clave</label>
@@ -1371,8 +1372,8 @@ function renderFormPersonajes() {
       <div class="pj-item-body">
         <input class="pj-edit-nombre" value="${esc(p.nombre)}" placeholder="Nombre"
           oninput="formPersonajes[${i}].nombre=this.value">
-        <input class="pj-edit-desc" value="${esc(p.descripcion)}" placeholder="Descripción…"
-          oninput="formPersonajes[${i}].descripcion=this.value">
+        <textarea class="pj-edit-desc" placeholder="Descripción…"
+          oninput="formPersonajes[${i}].descripcion=this.value">${esc(p.descripcion)}</textarea>
       </div>
       <div class="pj-item-actions">
         <span class="pj-badge ${p.tipo}" onclick="toggleFormPersonajeTipo(${i})" title="Cambiar tipo">${tipoLabel}</span>
